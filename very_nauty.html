@@ -1,0 +1,247 @@
+<style type="text/css">
+  td.k { background:rgb(255,255,153) }
+</style>
+
+<h3>The very_nauty graph library - version 1.1</h3>
+
+This is a C library of graph algorithms, especially targeted at very fast generation of random graphs, and exact clique number and chromatic number computation.   The name comes from the fact that it is designed to be compatible with Brendan McKay's <A HREF="http://cs.anu.edu.au/~bdm/nauty/">nauty</a> software, which is mainly concerned with graph generation and isomorphism testing.  Also, since the problems here are NP-complete, it's a bit naughty to even attempt them.   But the basic philosophy is that such calculations become more and more feasible as computers get faster. This gives us powerful ways of checking conjectures in graph theory, and also for checking the accuracy of asymptotic formulas.   In practice, it's possible to use the exact algorithms on graphs with up to a few hundred nodes.
+
+For some results computed with this software see:
+
+<ul>
+<li> <a href="Gnp_cliques.html">cliques in G(n,p)</a> 
+<li> <a href="cgt.html">data on chromatic number and clique number</a>
+<li> <a href="graph_theory_and_W.html">graph theory and Lambert's W function</a>
+<li> <a href="http://www.research.att.com/~njas/sequences/A115597">number of graphs on n nodes with chromatic number k</a>
+<li> <a href="http://www.research.att.com/~njas/sequences/A115196">number of graphs on n nodes with clique number k</a>
+</ul>
+
+
+<h4>basic graph functions and macros</h4>
+
+<p>All graphs are simple and undirected.  They are represented internally by dynamically allocated adjacency lists.
+
+<p><table border="1" cellpadding="4">
+<tr><td class="k"><tt>graph_t</tt></td><td class="k">type of a graph</td></tr>
+<tr><td class="k"><tt>void set_adj_list_initial_size(size_t sz)</tt></td><td class="k">set initial size of adjacency lists (defaults to 8)</td></tr>
+<tr><td class="k"><tt>graph_t graph_new(unsigned int n);</tt></td><td class="k">return a new empty graph with n nodes labelled 0..n-1</td></tr>
+<tr><td class="k"><tt>void graph_clear(graph_t g);</tt></td><td class="k">destroy a graph</td></tr>
+<tr><td class="k"><tt>void graph_empty(graph_t g);</tt></td><td class="k">set to the empty graph</td></tr>
+<tr><td class="k"><tt>void graph_add_edge(graph_t g,node_t i,node_t j);</tt></td><td class="k">add undirected edge i-j to the graph</td></tr>
+<tr><td class="k"><tt>void graph_del_edge(graph_t g,node_t i,node_t j);</tt></td><td class="k">delete edge i-j from the graph</td></tr>
+<tr><td class="k"><tt>int graph_has_edge(graph_t g,node_t i,node_t j);</tt></td><td class="k">1 if edge i-j is present in g, else 0</td></tr>
+<tr><td class="k"><tt>void graph_add_node(graph_t g);</tt></td><td class="k">add a node to the graph</td></tr>
+<tr><td class="k"><tt>nnodes(g)</tt></td><td class="k">number of nodes in g</td></tr>
+<tr><td class="k"><tt>nedges(g)</tt></td><td class="k">number of edges in g</td></tr>
+<tr><td class="k"><tt>graph_node_degree(graph_t g, node_t i);</tt></td><td class="k">degree of a node</td></tr>
+<tr><td class="k"><tt>int graph_min_degree(graph_t g);</tt></td><td class="k">minimum degree of a node in g</td></tr>
+<tr><td class="k"><tt>int graph_max_degree(graph_t g);</tt></td><td class="k">maximum degree of a node in g</td></tr>
+<tr><td class="k"><tt>double graph_mean_degree(graph_t g);</tt></td><td class="k">return mean degree of the nodes of g</td></tr>
+<tr><td class="k"><tt>void graph_show(graph_t g);</tt></td><td class="k">list edges of g to stdout</td></tr>
+<!--<tr><td class="k"><tt>void graph_print_stats(graph_t g);</tt></td><td class="k">print some basic information about g to stdout</td></tr>-->
+<tr><td class="k"><tt>void graph_make_dotfile(graph_t g, char* fn);</tt></td><td class="k">write a dotfile suitable for processing by <A HREF="http://www.graphviz.org/">graphviz</a></td></tr>
+<tr><td class="k"><tt>void graph_make_dotfile_colored(graph_t g, char* fn);</tt></td><td class="k">write a colored dotfile suitable for processing by graphviz</td></tr>
+<tr><td class="k"><tt>void graph_to_dimacs(graph_t g, char* fn);</tt></td><td class="k">write graph to a file named fn in DIMACS format</td></tr>
+<tr><td class="k"><tt>void graph_to_theta(graph_t g, char* fn);</tt></td><td class="k">write graph to a file named fn in a format suitable for reading by Benson's <a href="http://www-unix.mcs.anl.gov/DSDP/">Lov&aacute;sz theta program</a></td></tr>
+<tr><td class="k"><tt>int graph_nclusters(graph_t g);</tt></td><td class="k">the number of clusters (connected components) in g</td></tr>
+<tr><td class="k"><tt>int graph_connected(graph_t g);</tt></td><td class="k">1 if g is connected, else 0</td></tr>
+<tr><td class="k"><tt>cluster(g,i)</tt></td><td class="k">cluster to which node i belongs (valid only after a call to <tt>graph_greedy_color</tt> or <tt>graph_nclusters</tt>)</td></tr>
+<tr><td class="k"><tt>int* graph_cluster_sizes(graph_t g)</tt></td><td class="k">return a (0-terminated) list of cluster sizes, largest first</td></tr>
+<tr><td class="k"><tt>int graph_max_cluster(graph_t g)</tt></td><td class="k">size of largest cluster (graph is connected if this equals nnodes(g))</td></tr>
+</table>
+
+
+<h4>random graph generation</h4>
+<p>For more than a few graphs, it's better to use the iterators in the next section (especially for GRG).
+<p><table border="1" cellpadding="4">
+<tr><td class="k"><tt>void graph_gnp(graph_t g, double p);</tt></td><td class="k">generate an instance of the random graph G{n,p}</td></tr>
+<tr><td class="k"><tt>void graph_gnm(graph_t g, int m);</tt></td><td class="k">generate an instance of the random graph G(n,m)</td></tr>
+<tr><td class="k"><tt>void graph_grg(graph_t g, double r);</tt></td><td class="k">generate an instance of the geometric random graph GRG(n,r).  This has n nodes in the unit square, with each pair linked if their separation is less than r</td></tr>
+<tr><td class="k"><tt>void graph_lognormal_grg(graph_t g, double r, double alpha);</tt></td><td class="k">nodes a distance d apart are joined with probability (1-erf(log(d/r)/alpha))/2
+<tr><td class="k"><tt>void graph_grg_torus(graph_t g, double r);</tt></td><td class="k">as graph_grg, but in a unit-area torus instead of a square</td></tr>
+<tr><td class="k"><tt>void graph_lognormal_grg_torus(graph_t g, double r, double alpha);</tt></td><td class="k">nodes a torus distance d apart are joined with probability (1-erf(log(d/r)/alpha))/2
+</td></tr>
+</table>
+
+<h4>random graph iterators</h4>
+<p>When using these, an indefinitely large sample is generated from the specified ensemble, and f is called for each graph. f should return 0 to
+  terminate the iteration.  Arbitrary client data or paremeters may be passed to f through cd.
+<p><table border="1" cellpadding="4">
+<tr><td class="k"><tt>graph_gnp_iterator(unsigned int n, double p, int f(graph_t,int,void*), void* cd);</tt></td><td class="k">G{n,p}</td></tr>
+<tr><td class="k"><tt>graph_gnm_iterator(unsigned int n, unsigned long m, int f(graph_t,int,void*), void* cd);</tt></td><td class="k">G(n,m)</td></tr>
+<tr><td class="k"><tt>int graph_grg_torus_iterator(unsigned int n, double r, int f(graph_t,int,void*), void* cd);</tt></td><td class="k">GRG(n,r)</td></tr>
+<tr><td class="k"><tt>int graph_random_line_graph_iterator(unsigned int nlines, int f(graph_t,int,void*), void* cd) </tt></td><td class="k">model: place nlines dots uniformly in the unit square; put a line of random slope through each dot; intersections of these lines are the nodes of the graph; line segments between intersections are the edges of the graph</td></tr>
+<tr><td class="k"><tt>int graph_random_line_poisson_graph_iterator(double tau, int f(graph_t,int,void*), void* cd) </tt></td><td class="k">as above, but a Poisson number (mean=4*tau/pi) of nodes in the square</td></tr>
+</table>
+
+<h4>clique number (&omega;) computation</h4>
+<p><table border="1" cellpadding="4">
+<tr><td class="k"><tt>int graph_clique_number(graph_t g);</tt></td><td class="k">compute the exact clique number of g. Warning: this can take a long time for large graphs</td></tr>
+</table>
+
+<h4>complementation</h4>
+<p><table border="1" cellpadding="4">
+<tr><td class="k"><tt>void graph_local_complement(graph_t g, node_t i);</tt></td><td class="k">in-place local_complementation at node i; i.e. subgraph N_i(g) is complemented, where N_i(g) is the set of neighbours of i</td></tr>
+</table>
+
+<h4>coloring and chromatic number (&chi;) computation</h4>
+<p><table border="1" cellpadding="4">
+<tr><td class="k"><tt>int graph_greedy_color(graph_t g,int perm[]);</tt></td><td class="k">color the nodes of g in the node order given by perm, which must be a permutation of 0..nnodes(g)-1, or NULL, in which case the identity permutation is used.  This returns a rapidly computable upper bound to the chromatic number</td></tr>
+<tr><td class="k"><tt>int graph_sequential_color(graph_t g,int perm[],int ub);</tt></td><td class="k">color the nodes of g in node order given by perm, aborting as soon as more than ub colors are used (in which case -1 is returned).  This returns an upper bound to the chromatic number</td></tr>
+<tr><td class="k"><tt>int graph_sequential_color_repeat(graph_t g, int n);</tt></td><td class="k">color g's nodes n times in different random orders, and return the number of colors used in the best coloring found.  The larger n is, the tighter the upper bound to the chromatic number is likely to be</td></tr>
+<tr><td class="k"><tt>int graph_chromatic_number(graph_t g,clock_t timeout);</tt></td><td class="k">compute the exact vertex chromatic number of g.  If the timeout value (in seconds) is not zero and is reached, return -1. Warning: this can take a long time for large graphs</td></tr>
+<tr><td class="k"><tt>int graph_edge_chromatic_number(graph_t g,clock_t timeout);</tt></td><td class="k">compute the exact edge chromatic number of g.  If the timeout value (in seconds) is not zero and is reached, return -1. Warning: this can take a long time for large graphs</td></tr>
+<tr><td class="k"><tt>color(g,i)</tt></td><td class="k">color of node i in g (valid only after calling one of the coloring functions)</td></tr>
+<tr><td class="k"><tt>int graph_ncolors(graph_t g);</tt></td><td class="k">number of colors used in a coloring of g</td></tr>
+<tr><td class="k"><tt>int graph_check_coloring(graph_t g);</tt></td><td class="k">check that a node coloring is valid</td></tr>
+</table>
+
+<h4>histogram functions</h4>
+
+<p>Some convenience functions for collecting statistics (data restricted to
+non-negative integer values)...
+
+<p><table border="1" cellpadding="4">
+<tr><td class="k"><tt>histogram_t histogram_new(char* lbl);</tt></td><td class="k">make a new histogram labelled lbl</td></tr>
+<tr><td class="k"><tt>void histogram_empty(histogram_t);</tt></td><td class="k">reset a histogram to all zeros</td></tr>
+<tr><td class="k"><tt>void histogram_add(histogram_t h, int i);</tt></td><td class="k">add datum i to h</td></tr>
+<tr><td class="k"><tt>void histogram_clear(histogram_t h);</tt></td><td class="k">destroy h</td></tr>
+<tr><td class="k"><tt>void histogram_show(histogram_t h);</tt></td><td class="k">print h to stdout</td></tr>
+<tr><td class="k"><tt>void histogram_write(FILE*,histogram_t h);</tt></td><td class="k">write h to file</td></tr>
+<tr><td class="k"><tt>double histogram_mean(histogram_t h);</tt></td><td class="k">compute the mean of h</td></tr>
+<tr><td class="k"><tt>int histogram_max(histogram_t h);</tt></td><td class="k">maximum value in h</td></tr>
+<tr><td class="k"><tt>double histogram_variance(histogram_t h);</tt></td><td class="k">compute the variance of h</td></tr>
+<tr><td class="k"><tt>unsigned int histogram_mode(histogram_t h);</tt></td><td class="k">compute the mode of h</td></tr>
+<tr><td class="k"><tt>int histogram_biggest_done(histogram_t h, double eps);</tt></td><td class="k">return 1 if the modal value has relative standard error less than eps, else 0</td></tr>
+<tr><td class="k"><tt>int histogram_mean_done(histogram_t h, double eps);</tt></td><td class="k">return 1 if the mean has relative standard error less than eps, else 0</td></tr>
+<tr><td class="k"><tt>double histogram_quantile(histogram_t h, double q);</tt><td class="k">compute the qth quantile of h (q=0.5 for the median)</td></tr>
+<tr><td class="k"><tt>histogram_t graph_geng_reader(FILE* f, int op(graph_t), char* lbl);</tt></td><td class="k">iterate over graphs in file f (in graph6 or sparse6 format), applying op to each and returning a histogram</td></tr>
+<tr><td class="k"><tt>histogram_t graph_showg_reader(FILE* f, int op(graph_t), char* lbl);</tt></td><td class="k">iterate over graphs in file f (in "showg -l0 -e" format), applying op to each and returning a histogram</td></tr>
+</table>
+
+<h4>download &amp; installation</h4>
+
+<ul>
+<li> get <a href="software/very_nauty-1.1.tgz">very_nauty-1.1.tgz</a><br>
+<li><tt>tar zxf very_nauty-1.1.tgz</tt>
+<li><tt>cd very_nauty-1.1</tt>
+<li><tt>make</tt>
+<li><tt>sudo make install</tt>
+</ul>
+
+<h4>simple library usage example</h4>
+<p>
+<ul>
+<li><tt>cat example_03.c</tt>
+<pre>
+<font color="#ff80ff">#include </font><font color="#ffa0a0">&quot;vn_graph.h&quot;</font>
+
+<font color="#60ff60">int</font> main() {
+  graph_t g=graph_new(<font color="#ffa0a0">5</font>);
+  graph_add_edge(g,<font color="#ffa0a0">0</font>,<font color="#ffa0a0">1</font>);
+  graph_add_edge(g,<font color="#ffa0a0">0</font>,<font color="#ffa0a0">2</font>);
+  graph_add_edge(g,<font color="#ffa0a0">0</font>,<font color="#ffa0a0">3</font>);
+  graph_add_edge(g,<font color="#ffa0a0">0</font>,<font color="#ffa0a0">4</font>);
+  graph_add_edge(g,<font color="#ffa0a0">1</font>,<font color="#ffa0a0">4</font>);
+  graph_show(g);
+  printf(<font color="#ffa0a0">&quot;chi=</font><font color="#ffa500">%d</font><font color="#ffa500">\n</font><font color="#ffa0a0">&quot;</font>,graph_chromatic_number(g,<font color="#ffa0a0">0</font>));
+  graph_make_dotfile_colored(g,<font color="#ffa0a0">&quot;example_03.dot&quot;</font>);
+  printf(<font color="#ffa0a0">&quot;number of clusters=</font><font color="#ffa500">%d</font><font color="#ffa500">\n</font><font color="#ffa0a0">&quot;</font>,graph_nclusters(g));
+  graph_add_node(g);
+  printf(<font color="#ffa0a0">&quot;nnodes=</font><font color="#ffa500">%d</font><font color="#ffa0a0"> number of clusters=</font><font color="#ffa500">%d</font><font color="#ffa500">\n</font><font color="#ffa0a0">&quot;</font>,nnodes(g),graph_nclusters(g));
+  graph_clear(g);
+  <font color="#ffff00">return</font> <font color="#ffa0a0">0</font>;
+}
+</pre>
+<li> <tt>gcc -I/usr/local/include example_03.c -o example_03 -L/usr/local/lib -lvn_graph -lm</tt>
+<li> <tt>./example_03</tt>
+<tt><pre>
+0: 1 2 3 4
+1: 0 4
+2: 0
+3: 0
+4: 0 1
+chi=3
+example_03.dot written: now do "neato -Tps example_03.dot | gv -"
+number of clusters=1
+nnodes=6 number of clusters=2
+</pre></tt>
+<li> <tt>neato -Tpng example_03.dot > example_03.png</tt>
+<p><img src="example_03.png">
+</ul>
+
+
+<h4>stand-alone programs</h4>
+
+<p>The programs <tt>vn_graph_omega</tt> and <tt>vn_graph_chi</tt> are provided for computing clique and (vertex) chromatic number of <tt>geng</tt> output.  
+Also <tt>vn_graph_chi_dash</tt> computes the edge chromatic number.
+
+<p>Examples:
+
+<ul>
+<li> Compute the clique number of all 8-node graphs:
+<tt><pre>
+kbriggs:~/very_nauty-1.1> geng 8 | time ./vn_graph_omega
+>A geng -d0D7 n=8 e=0-28
+>Z 12346 graphs generated in 0.03 sec
+graph_omega 12346 items; mode=3 average=3.528997 variance=0.4996 stdev=0.7069 stderr=0.006362
+ 1          1   0.000081    0.008% se=nan
+ 2        409   0.033128    3.313% se=0.0104
+ 3       6021   0.487688   48.769% se=0.000793
+ 4       4985   0.403775   40.377% se=0.0012
+ 5        842   0.068200    6.820% se=0.000608
+ 6         80   0.006480    0.648% se=0.000205
+ 7          7   0.000567    0.057% se=6.62e-05
+ 8          1   0.000081    0.008% se=nan
+0.15user 0.02system 0:00.25elapsed 67%CPU
+</pre></tt>
+<li>Estimate the distribution of chromatic number in G(50,1/5):
+<tt><pre>
+kbriggs:~/very_nauty-1.1> genrang -P20/100 50 10000 | time ./vn_graph_chi
+graph_chi 10000 items; mode=5 average=5.010700 variance=0.01239 stdev=0.1113 stderr=0.001113
+ 4          9   0.000900    0.090% se=0.000298
+ 5       9875   0.987500   98.750% se=1.26e-05
+ 6        116   0.011600    1.160% se=0.000198
+11.56user 0.33system 0:13.53elapsed 87%CPU
+</pre></tt>
+<li> Compute the chromatic number of all 10-node connected graphs regular of
+degree 4:
+<tt><pre>
+kbriggs:~/very_nauty-1.1> geng -c -d4 -D4 10 | ./vn_graph_chi
+>A geng -cd4D4 n=10 e=20
+>Z 59 graphs generated in 0.01 sec
+graph_chi 59 items; mode=4 average=3.491525 variance=0.2887 stdev=0.5373 stderr=0.06995
+ 2          1   0.016949    1.695% se=nan
+ 3         28   0.474576   47.458% se=0.0207
+ 4         30   0.508475   50.847% se=0.0246
+</pre></tt>
+
+<li> Compute the edge chromatic number of all 10-node connected triangle-free graphs:
+<tt><pre>
+kbriggs@europa:~/very_nauty-1.1> geng -c -t 10 | time ./vn_graph_chi_dash
+>A geng -ctd1D9 n=10 e=9-25
+>Z 9832 graphs generated in 0.04 sec
+graph_chi_dash 9832 items; mode=4 mean=4.440602 var=0.5836 stdev=0.7639 stderr=0.007704
+ 2          2   0.000203    0.020% se=4.48e-05
+ 3        694   0.070586    7.059% se=0.000612
+ 4       4953   0.503763   50.376% se=0.00121
+ 5       3435   0.349369   34.937% se=0.000571
+ 6        659   0.067026    6.703% se=0.00225
+ 7         80   0.008137    0.814% se=0.00719
+ 8          8   0.000814    0.081% se=0.0323
+ 9          1   0.000102    0.010% se=nan
+0.14user 0.00system 0:00.26elapsed 55%CPU
+</pre></tt>
+
+</ul>
+
+<h4>acknowledgements</h4>
+
+<p>
+<ul>
+<li> Brendan McKay for nauty, from which I borrowed code to read graph6 and
+sparse6 format.
+<li> Kevin O'Neill for the <a href="http://www.cs.cornell.edu/people/oneill/stuff/maxclique.c">original version</a> of the exact clique number algorithm.  I modified this to use dynamic memory allocation and made various other improvements.
+<li> Michael Trick for the <a href="http://mat.gsia.cmu.edu/COLOR/solvers/trick.c">original version</a> of the exact chromatic number algorithm.  I modified this to use dynamic memory allocation and made various other improvements.
+<li> Linlin Song for beta-testing
+</ul>

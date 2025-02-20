@@ -1,0 +1,36 @@
+<html>
+<head>
+<title>~/very_nauty-1.0/examples/example_03.c.html</title>
+<meta name="Generator" content="Vim/6.3">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body bgcolor="#000000" text="#cccccc">
+<pre>
+<font color="#ff80ff">#include </font><font color="#ffa0a0">&quot;vn_graph.h&quot;</font>
+
+<font color="#60ff60">int</font> main() {
+  <font color="#60ff60">int</font> j;
+  graph_t g=graph_new(<font color="#ffa0a0">5</font>);
+  graph_add_edge(g,<font color="#ffa0a0">0</font>,<font color="#ffa0a0">1</font>);
+  graph_add_edge(g,<font color="#ffa0a0">0</font>,<font color="#ffa0a0">2</font>);
+  graph_add_edge(g,<font color="#ffa0a0">0</font>,<font color="#ffa0a0">3</font>);
+  graph_add_edge(g,<font color="#ffa0a0">0</font>,<font color="#ffa0a0">4</font>);
+  graph_add_edge(g,<font color="#ffa0a0">1</font>,<font color="#ffa0a0">4</font>);
+  graph_show(g);
+  printf(<font color="#ffa0a0">&quot;chi=</font><font color="#ffa500">%d</font><font color="#ffa500">\n</font><font color="#ffa0a0">&quot;</font>,graph_chromatic_number(g,<font color="#ffa0a0">0</font>));
+  graph_make_dotfile_colored(g,<font color="#ffa0a0">&quot;example_03.dot&quot;</font>);
+  graph_greedy_color(g,<font color="#ffa0a0">NULL</font>);
+  <font color="#ffff00">for</font> (j=<font color="#ffa0a0">0</font>; j&lt;g-&gt;nnodes; j++) {
+    <font color="#ffff00">if</font> (visited(g,j)) {
+      printf(<font color="#ffa0a0">&quot;node </font><font color="#ffa500">%d</font><font color="#ffa0a0"> visited&quot;</font>,j);
+      printf(<font color="#ffa0a0">&quot;, color=</font><font color="#ffa500">%d</font><font color="#ffa0a0">&quot;</font>,color(g,j));
+      printf(<font color="#ffa0a0">&quot;, cluster=</font><font color="#ffa500">%d</font><font color="#ffa500">\n</font><font color="#ffa0a0">&quot;</font>,cluster(g,j));
+    }
+  }
+  printf(<font color="#ffa0a0">&quot;check_coloring=</font><font color="#ffa500">%d</font><font color="#ffa500">\n</font><font color="#ffa0a0">&quot;</font>,graph_check_coloring(g));
+  graph_clear(g);
+  <font color="#ffff00">return</font> <font color="#ffa0a0">0</font>;
+}
+</pre>
+</body>
+</html>
