@@ -870,6 +870,40 @@ void graph_grg_torus_sorted(graph_t g, double r) {
   }
 }
 
+inline void _grg_torus_iterator_check_box(int i, int j, graph_t g, unsigned int **count, unsigned int ***boxes, double *x, double *y, double r2) {
+  // check all pairs in box (i,j)
+  int i0,i1,k0,k1;
+  double dx,dy;
+  for (i0=0; i0<count[i][j]; i0++) {
+    k0=boxes[i][j][i0];
+    for (i1=0; i1<count[i][j]; i1++) {
+      k1=boxes[i][j][i1];
+      if (k0<k1) {
+        dx=fabs(x[k0]-x[k1]);
+        dy=fabs(y[k0]-y[k1]);
+        if (torus_distance2(dx,dy)<r2) graph_append_edge(g,k0,k1);
+      }
+    }
+  }
+}
+inline void _grg_torus_iterator_check_pairs(int i, int j, int l, int m, graph_t g, unsigned int **count, unsigned int ***boxes, double *x, double *y, double r2) {
+  // check all pairs, one in box (i,j), one in box (l,m)
+  // (l,m) will always be one of the boxes above, above right, right,
+  // or below right of (i,j).   Thus we get each potential edge once only.
+  int i0,i1,k0,k1;
+  double dx,dy;
+  for (i0=0; i0<count[i][j]; i0++) {
+    k0=boxes[i][j][i0];
+    for (i1=0; i1<count[l][m]; i1++) {
+      k1=boxes[l][m][i1];
+      if (1) {
+        dx=fabs(x[k0]-x[k1]);
+        dy=fabs(y[k0]-y[k1]);
+        if (torus_distance2(dx,dy)<r2) graph_append_edge(g,k0,k1);
+      }
+    }
+  }
+}
 int graph_grg_torus_iterator(unsigned int n, double r, int f(graph_t,int,void*), void* cd) {
   /*
   Iterate over the ensemble grg(n,r).
@@ -895,45 +929,12 @@ int graph_grg_torus_iterator(unsigned int n, double r, int f(graph_t,int,void*),
   struct tms buffer;
   int tps;
   clock_t current_time,start_time;
-  // internal functions...
-  int i0,i1,k0,k1;
-  double dx,dy;
   graph_t g=graph_new(n);
   if (r<=0.0) {
     graph_empty(g);
     do { // iterate over graphs
     } while ((l=f(g,ig++,cd)));
     return l;
-  }
-  inline void check_box(int i, int j) {
-    // check all pairs in box (i,j)
-    for (i0=0; i0<count[i][j]; i0++) {
-      k0=boxes[i][j][i0];
-      for (i1=0; i1<count[i][j]; i1++) {
-        k1=boxes[i][j][i1];
-        if (k0<k1) {
-  	  dx=fabs(x[k0]-x[k1]);
-          dy=fabs(y[k0]-y[k1]);
-          if (torus_distance2(dx,dy)<r2) graph_append_edge(g,k0,k1);
-        }
-      }
-    }
-  }
-  inline void check_pairs(int i, int j, int l, int m) {
-    // check all pairs, one in box (i,j), one in box (l,m)
-    // (l,m) will always be one of the boxes above, above right, right,
-    // or below right of (i,j).   Thus we get each potential edge once only.
-    for (i0=0; i0<count[i][j]; i0++) {
-      k0=boxes[i][j][i0];
-      for (i1=0; i1<count[l][m]; i1++) {
-        k1=boxes[l][m][i1];
-        if (1) {
-  	  dx=fabs(x[k0]-x[k1]);
-          dy=fabs(y[k0]-y[k1]);
-          if (torus_distance2(dx,dy)<r2) graph_append_edge(g,k0,k1);
-        }
-      }
-    }
   }
   nb=(int)floor(1.0/r);
   r2=r*r;
@@ -1000,11 +1001,11 @@ int graph_grg_torus_iterator(unsigned int n, double r, int f(graph_t,int,void*),
     }
     // loop over all pairs of abutting boxes
     for (i=0; i<nb; i++) for (j=0; j<nb; j++) {
-      check_box(i,j);                   // self
-      check_pairs(i,j,i,m=(j+1)%nb);    // above
-      check_pairs(i,j,l=(i+1)%nb,m);    // top right
-      check_pairs(i,j,l,j);             // right
-      check_pairs(i,j,l,(j+nb-1)%nb);   // bottom right
+      _grg_torus_iterator_check_box(i,j,g,count,boxes,x,y,r2);                   // self
+      _grg_torus_iterator_check_pairs(i,j,i,m=(j+1)%nb,g,count,boxes,x,y,r2);    // above
+      _grg_torus_iterator_check_pairs(i,j,l=(i+1)%nb,m,g,count,boxes,x,y,r2);    // top right
+      _grg_torus_iterator_check_pairs(i,j,l,j,g,count,boxes,x,y,r2);             // right
+      _grg_torus_iterator_check_pairs(i,j,l,(j+nb-1)%nb,g,count,boxes,x,y,r2);   // bottom right
     }
     for (i=0; i<nb; i++) for (j=0; j<nb; j++) count[i][j]=0;
   } while ((l=f(g,ig++,cd)));
@@ -1051,6 +1052,19 @@ int graph_gnp_iterator(unsigned int n, double p, int f(graph_t,int,void*), void*
   return l;
 }
 
+typedef struct {
+  double x;
+  int n;
+} xs_cell;
+
+int cmp_xs(const void *ap, const void *bp) {
+  double a=(*(xs_cell*)ap).x;
+  double b=(*(xs_cell*)bp).x;
+  if (a<b) return -1;
+  if (a>b) return +1;
+  return 0;
+}
+
 int graph_random_line_graph_iterator(unsigned int nlines, int f(graph_t,int,void*), void* cd) {
   // model:
   //  1. place nlines dots uniformly in the unit square
@@ -1059,17 +1073,6 @@ int graph_random_line_graph_iterator(unsigned int nlines, int f(graph_t,int,void
   //  4. line segments between intersections are the edges of the graph
   //  See R E Miles PNAS 52, 901 (1964), PNAS 52, 1157 (1964)
   // python originals: regular_degree4.py, random_planar.py
-  typedef struct {
-    double x;
-    int n;
-  } xs_cell;
-  int cmp_xs(const void *ap, const void *bp) {
-    double a=(*(xs_cell*)ap).x;
-    double b=(*(xs_cell*)bp).x;
-    if (a<b) return -1;
-    if (a>b) return +1;
-    return 0;
-  }
   int done,i,j,l,k,lq,n,len_xs;
   double x0i,y0i,si,x0j,y0j,sj,x,y;
   double *lines_x0,*lines_y0,*lines_s;
@@ -1150,17 +1153,6 @@ int graph_random_line_graph_poisson_iterator(double tau, int f(graph_t,int,void*
   //  2. put a line of random slope through each dot
   //  3. intersections of these lines are the modes of the graph
   //  4. line segments between intersections are the edges of the graph
-  typedef struct {
-    double x;
-    int n;
-  } xs_cell;
-  int cmp_xs(const void *ap, const void *bp) {
-    double a=(*(xs_cell*)ap).x;
-    double b=(*(xs_cell*)bp).x;
-    if (a<b) return -1;
-    if (a>b) return +1;
-    return 0;
-  }
   int nlines,nlinesmax;
   int done,i,j,l,k,lq,n,len_xs;
   double x0i,y0i,si,x0j,y0j,sj,x,y;
@@ -1395,23 +1387,24 @@ void histogram_show(histogram_t h) {
   histogram_write(stdout,h);
 }
 
+double cum(double x, const histogram_t h) { // cumulative distribution from h
+  int i=0;
+  double s=0.0,x0,x1,y0,y1;
+  x0=floor(x-0.5)+0.5;
+  if (x0>=h->a) x0=h->a-1;
+  for (i=0; i<x0; i++) s+=h->h[i];
+  x1=x0+1.0;
+  y0=s;
+  y1=s+h->h[i];
+  return ((y1-y0)/(x1-x0)*(x-x0)+y0)/h->n; // linear interpolation
+}
+
 double histogram_quantile(const histogram_t h, double y) {
-  double cum(double x) { // cumulative distribution from h
-    int i=0;
-    double s=0.0,x0,x1,y0,y1;
-    x0=floor(x-0.5)+0.5;
-    if (x0>=h->a) x0=h->a-1;
-    for (i=0; i<x0; i++) s+=h->h[i];
-    x1=x0+1.0;
-    y0=s;
-    y1=s+h->h[i];
-    return ((y1-y0)/(x1-x0)*(x-x0)+y0)/h->n; // linear interpolation
-  }
   // bisect
   double md,dn=0,up=histogram_max(h);
   md=0.5*(up+dn);
   while (fabs(up-dn)>1e-9) {
-    if (cum(md)>y) up=md; else dn=md;
+    if (cum(md, h)>y) up=md; else dn=md;
     md=0.5*(up+dn);
   }
   return md;
