@@ -1,7 +1,7 @@
 /* Modified by Keith M Briggs:
      dynamic memory allocation
      global struct cg
-     timeout 
+     timeout
      various tidy-ups
      Code is probably sufficiently debugged, and may be useful to some people.
 */
@@ -9,7 +9,7 @@
 struct { // coloring globals
   graph_t g;
   struct tms buffer;		/* structure for timing  */
-  int tps; 
+  int tps;
   clock_t current_time, start_time, timeout;
   double utime;
   int verbose;
@@ -165,7 +165,7 @@ static int max_w_clique(int valid[], int clique[], int lower, int target) {
   valid1=(int*)Calloc(cg.num_node,sizeof(int));
   clique1=(int*)Calloc(cg.num_node,sizeof(int));
   for (place = start; place < finish; place++) {
-    if (incumb + total_left < lower) { 
+    if (incumb + total_left < lower) {
       incumb=0;
       break;
     }

@@ -22,7 +22,7 @@ static const double RAND_MAXp1=((double)RAND_MAX+1.0);
 
 #undef VN_COUNT_RNG_CALLS
 #ifdef VN_COUNT_RNG_CALLS
-long long vn_rng_calls=0; 
+long long vn_rng_calls=0;
 #define VN_GRAPH_UNIFORM_01 (vn_rng_calls++,rand()/((double)RAND_MAX)) /* uniform(0,1) */
 #else
 #define VN_GRAPH_UNIFORM_01 (rand()/((double)RAND_MAX)) /* uniform(0,1) */
@@ -562,7 +562,7 @@ double binomial_deviate(double pp, int n) {
   p=(pp<=0.5?pp:1.0-pp);
   am=n*p;
   if (n<30) {
-    bnl=0.0; 
+    bnl=0.0;
     for (j=1; j<=n; j++) if (UNIFORM_01<p) ++bnl;
   } else if (am<1.0) {
     g=exp(-am);
@@ -571,7 +571,7 @@ double binomial_deviate(double pp, int n) {
   } else {
   if (n!=nold) {
     en=n; oldg=lgamma(en+1.0); nold=n;
-  } 
+  }
   if (p!=pold) {
     pc=1.0-p; plog=log(p); pclog=log(pc); pold=p;
   }
@@ -583,7 +583,7 @@ double binomial_deviate(double pp, int n) {
     em=floor(em);
     t=1.2*sq*(1.0+y*y)*exp(oldg-lgamma(em+1.0)-lgamma(en-em+1.0)+em*plog+(en-em)*pclog);
     } while (UNIFORM_01>t);
-    bnl=em; 
+    bnl=em;
   }
   if (p!=pp) return n-bnl;
   return bnl;
@@ -598,8 +598,8 @@ void graph_gnp(graph_t g, double p) {
     graph_empty(g);
     while (1) {
       if ((i=(int)floor(log1p(-UNIFORM_01)/log1mp))) { // geometric deviate
-        k+=i; 
-        if (k>=n2) return; 
+        k+=i;
+        if (k>=n2) return;
         graph_add_edge1(g,k);
       }
     }
@@ -871,11 +871,11 @@ void graph_grg_torus_sorted(graph_t g, double r) {
 }
 
 int graph_grg_torus_iterator(unsigned int n, double r, int f(graph_t,int,void*), void* cd) {
-  /* 
+  /*
   Iterate over the ensemble grg(n,r).
-  Strategy: divide unit square into nb*nb boxes of width>=r.  Two nodes 
-  can only be neighbours if they are in the same or abutting boxes. 
-  We then only need on average to look at 
+  Strategy: divide unit square into nb*nb boxes of width>=r.  Two nodes
+  can only be neighbours if they are in the same or abutting boxes.
+  We then only need on average to look at
     (n/(nb*nb)*(n/(nb*nb)-1)/2)*(5*nb*nb)
   pairs of nodes, compared to n*(n-1)/2 the slow way.
   This method wins when (n/(nb*nb)*(n/(nb*nb)-1)/2)*(5*nb*nb)>n*(n-1)/2,
@@ -893,7 +893,7 @@ int graph_grg_torus_iterator(unsigned int n, double r, int f(graph_t,int,void*),
   size_t **alloc;
   /* timing  */
   struct tms buffer;
-  int tps; 
+  int tps;
   clock_t current_time,start_time;
   // internal functions...
   int i0,i1,k0,k1;
@@ -921,8 +921,8 @@ int graph_grg_torus_iterator(unsigned int n, double r, int f(graph_t,int,void*),
   }
   inline void check_pairs(int i, int j, int l, int m) {
     // check all pairs, one in box (i,j), one in box (l,m)
-    // (l,m) will always be one of the boxes above, above right, right, 
-    // or below right of (i,j).   Thus we get each potential edge once only. 
+    // (l,m) will always be one of the boxes above, above right, right,
+    // or below right of (i,j).   Thus we get each potential edge once only.
     for (i0=0; i0<count[i][j]; i0++) {
       k0=boxes[i][j][i0];
       for (i1=0; i1<count[l][m]; i1++) {
@@ -1052,7 +1052,7 @@ int graph_gnp_iterator(unsigned int n, double p, int f(graph_t,int,void*), void*
 }
 
 int graph_random_line_graph_iterator(unsigned int nlines, int f(graph_t,int,void*), void* cd) {
-  // model: 
+  // model:
   //  1. place nlines dots uniformly in the unit square
   //  2. put a line of random slope through each dot
   //  3. intersections of these lines are the modes of the graph
@@ -1077,7 +1077,7 @@ int graph_random_line_graph_iterator(unsigned int nlines, int f(graph_t,int,void
   xs_cell *xs,*q;
   graph_t g;
   // these over-allocate to save the bother of dynamically allocated stacks
-  // and lists.  But as we don't expect more than about nlines=20, it should 
+  // and lists.  But as we don't expect more than about nlines=20, it should
   // not matter...
   xs=malloc(nlines*(nlines-1)/2*sizeof(xs_cell));
   q=malloc((nlines-1)*sizeof(xs_cell));
@@ -1143,8 +1143,8 @@ int graph_random_line_graph_iterator(unsigned int nlines, int f(graph_t,int,void
 int graph_random_line_graph_poisson_iterator(double tau, int f(graph_t,int,void*), void* cd) {
   // See R E Miles PNAS 52, 901 (1964), PNAS 52, 1157 (1964)
   // The mean number of lines in the unit square is 4*tau/pi (Miles thm 3)
-  // first allocate enough for largest expected n. 
-  // model: 
+  // first allocate enough for largest expected n.
+  // model:
   //  0. get n=Poisson(4*tau/pi)
   //  1. place n dots uniformly in the unit square
   //  2. put a line of random slope through each dot
@@ -1172,7 +1172,7 @@ int graph_random_line_graph_poisson_iterator(double tau, int f(graph_t,int,void*
   fprintf(stderr,"tau=%g nlinesmax=%d\n",tau,nlinesmax);
   graph_t g;
   // these over-allocate to save the bother of dynamically allocated stacks
-  // and lists.  But as we don't expect more than about nlines=20, it should 
+  // and lists.  But as we don't expect more than about nlines=20, it should
   // not matter...
   xs=malloc(nlinesmax*(nlinesmax-1)/2*sizeof(xs_cell));
   q=malloc((nlinesmax-1)*sizeof(xs_cell));
@@ -1290,10 +1290,10 @@ void graph_local_complement(graph_t g, node_t i) {
     nj=g->a[i][j];
     for (k=0; k<degree(g,i); k++) {
       nk=g->a[i][k];
-      if (nj<nk) { 
-        if (graph_has_edge(g,nj,nk)) { 
+      if (nj<nk) {
+        if (graph_has_edge(g,nj,nk)) {
           delj[nd]=nj; delk[nd]=nk; nd++;
-        } else { 
+        } else {
           addj[na]=nj; addk[na]=nk; na++;
         }
       }
@@ -1832,6 +1832,6 @@ double poisson_deviate(double xm) {
         em=floor(em);
         t=0.9*(1.0+y*y)*exp(em*alxm-lgamma(em+1.0)-g);
     } while (UNIFORM_01>t);
-  } 
+  }
   return em;
 }

@@ -41,7 +41,7 @@ struct _graph {
   node_t **a; // adjacency lists
   node_t  *d; // degree (d[i]<=b[i])
   size_t  *b; // allocated length of adjacency list
-  char    *v; // visited 
+  char    *v; // visited
   int     *c; // color
   int     *l; // cluster number
   unsigned int nnodes;
