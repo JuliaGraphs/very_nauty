@@ -8,8 +8,6 @@
 
 struct { // coloring globals
   graph_t g;
-  struct tms buffer;		/* structure for timing  */
-  int tps;
   clock_t current_time, start_time, timeout;
   double utime;
   int verbose;
@@ -233,9 +231,8 @@ static int Color(int i, int current_color) {
   if (cg.BestColoring<=cg.lb) return cg.BestColoring;
   if (i>=cg.num_node) return current_color;
   if (cg.timeout) {  // a timeout is specified
-    times(&cg.buffer);
-    cg.current_time=cg.buffer.tms_utime;
-    if ((cg.current_time-cg.start_time)>cg.tps*cg.timeout) return -1;
+    cg.current_time=clock();
+    if ((cg.current_time-cg.start_time)>CLOCKS_PER_SEC*cg.timeout) return -1;
   }
   /* Find node with maximum color_adj */
   max=-1;
