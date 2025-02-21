@@ -6,7 +6,7 @@
 #include <string.h>
 #include <limits.h>
 #include <float.h>
-#include <sys/times.h>
+#include <time.h>
 #define NDEBUG
 #include <assert.h>
 

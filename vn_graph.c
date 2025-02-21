@@ -12,8 +12,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <sys/time.h>
-#include <sys/times.h>
+#include <time.h>
 
 #include "vn_graph.h"
 
@@ -926,7 +925,6 @@ int graph_grg_torus_iterator(unsigned int n, double r, int f(graph_t,int,void*),
   unsigned int nb,***boxes,**count;
   size_t **alloc;
   /* timing  */
-  struct tms buffer;
   int tps;
   clock_t current_time,start_time;
   graph_t g=graph_new(n);
@@ -960,9 +958,7 @@ int graph_grg_torus_iterator(unsigned int n, double r, int f(graph_t,int,void*),
     return l;
   }
   if (timing) {
-    tps=sysconf(_SC_CLK_TCK); // clock ticks per second
-    times(&buffer);
-    start_time=buffer.tms_utime;
+    start_time=clock();
   }
   boxes=malloc(nb*sizeof(unsigned int**));
   count=malloc(nb*sizeof(unsigned int*));
@@ -981,10 +977,9 @@ int graph_grg_torus_iterator(unsigned int n, double r, int f(graph_t,int,void*),
     boxes[i][j]=malloc(initial_length*sizeof(unsigned int));
   }
   if (timing) {
-    times(&buffer);
-    current_time=buffer.tms_utime;
-    printf("setup time=%g\n",(current_time-start_time)/(double)tps);
-    start_time=buffer.tms_utime;
+    current_time=clock();
+    printf("setup time=%g\n",(current_time-start_time)/(double)CLOCKS_PER_SEC);
+    start_time=current_time;
   }
   do { // iterate over graphs
     graph_empty(g);
@@ -1010,10 +1005,9 @@ int graph_grg_torus_iterator(unsigned int n, double r, int f(graph_t,int,void*),
     for (i=0; i<nb; i++) for (j=0; j<nb; j++) count[i][j]=0;
   } while ((l=f(g,ig++,cd)));
   if (timing) {
-    times(&buffer);
-    current_time=buffer.tms_utime;
-    printf("iterate time=%g\n",(current_time-start_time)/(double)tps);
-    printf("fast: %g seconds for %d graphs\n",(current_time-start_time)/(double)tps,ig);
+    current_time=clock();
+    printf("iterate time=%g\n",(current_time-start_time)/(double)CLOCKS_PER_SEC);
+    printf("fast: %g seconds for %d graphs\n",(current_time-start_time)/(double)CLOCKS_PER_SEC,ig);
   }
   for (i=0; i<nb; i++) {
     for (j=0; j<nb; j++) free(boxes[i][j]);
@@ -1526,9 +1520,7 @@ int graph_chromatic_number(graph_t g, clock_t timeout) {
   cg.num_prob=0;
   cg.max_prob=10000;
   // timing...
-  cg.tps=sysconf(_SC_CLK_TCK); // clock ticks per second
-  times(&cg.buffer);
-  cg.start_time=cg.buffer.tms_utime;
+  cg.start_time=clock();
   cg.timeout=timeout;
   if (1) {
     place=0;
@@ -1624,9 +1616,7 @@ int graph_chromatic_number_special(graph_t g, int lb, int ub, clock_t timeout) {
   cg.num_prob=0;
   cg.max_prob=10000;
   // timing...
-  cg.tps=sysconf(_SC_CLK_TCK); // clock ticks per second
-  times(&cg.buffer);
-  cg.start_time=cg.buffer.tms_utime;
+  cg.start_time=clock();
   cg.timeout=timeout;
   if (1) {
     place=0;
